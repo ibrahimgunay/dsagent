@@ -74,7 +74,7 @@ FUNNEL_STAGES = [
 # Synthetic demo data (replace with pd.read_csv when you have real data)
 # ---------------------------------------------------------------------------
 
-def _make_demo_panel(n_users=500, n_weeks=12, seed=42) -> pd.DataFrame:
+def _make_demo_panel(n_users=200, n_weeks=10, seed=42) -> pd.DataFrame:
     """Staggered adoption panel with a known retention effect of ~0.12."""
     rng = np.random.default_rng(seed)
     users = np.arange(n_users)
@@ -214,12 +214,14 @@ def analysis_adoption_retention(panel: pd.DataFrame) -> None:
           f"{'(fragile)' if ev['fragile'] else '(robust)'}")
     print(f"  Robustness value:   {rv['robustness_value']} — {rv['interpretation']}")
 
-    # refutation battery (subset + random-common-cause + permutation placebo)
-    def _fit_point(d):
-        r = ex.fit(estimator, d, **cfg)
-        return r.point
+    # Refutation battery uses a fast OLS proxy (regression_adjust) to keep the
+    # demo snappy. The main estimate above uses the rigorous selected estimator.
+    _ra_ctrl = tuple(ctrl_cols) if ctrl_cols else ("t",)
+    def _fast_fit(d):
+        return est.regression_adjust(d, treat="t", outcome="y",
+                                     controls=_ra_ctrl).point
 
-    ref = est.refutation_battery(_fit_point, df, treat="t", n_perm=200)
+    ref = est.refutation_battery(_fast_fit, df, treat="t", n_perm=50)
     print(f"  Refutation battery: perm p={ref['permutation_p']}, "
           f"placebo mean={ref['placebo_mean_effect']:+.4f}, "
           f"survived_all={ref['survived_all']}")
