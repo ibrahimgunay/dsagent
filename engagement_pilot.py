@@ -364,7 +364,7 @@ def main():
     # cat = Catalog()
     # cat.ingest_ddl(open("schema.sql").read())        # point at your DDL
     #
-    # llm = make_client("anthropic")                   # reads ANTHROPIC_API_KEY
+    # llm = make_client("openai")                       # or "gemini" | "stub"; reads *_API_KEY
     # result = run_adaptive(
     #     goal="Did feature adoption causally increase weekly retention?",
     #     catalog=cat,

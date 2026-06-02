@@ -1,15 +1,86 @@
 # Changelog
 
+## v3.5.0 — agentic NL2SQL for ANY unseen schema (RAG linking + validate/repair loop)
+
+Turns a natural-language question + an unfamiliar database into trusted SQL with
+minimal instruction. The LLM does the reasoning; deterministic gates make it
+impossible to ship a hallucinated-column or double-counting query.
+
+### RAG schema-linking (dsagent/sql/schema_linker.py)
+- `link_schema(question, catalog)` retrieves only the relevant tables/columns
+  from an arbitrarily large schema (the fix for Spider 2.0's #1 error: wrong
+  schema linking on 700-3000-column DBs). Dependency-free scorer; embedding seam.
+- Lets the agent work on an unseen database by discovering the relevant tables
+  itself instead of being told them.
+
+### Validate-and-repair guardrails (dsagent/sql/validate.py)
+- column-existence gate: every `alias.column` must resolve to a real catalog
+  column -> kills hallucinated columns; self-repair snaps a near-miss to the
+  closest real column (e.g. a.mrrr -> a.mrr).
+- fan-out gate (reused) + join-validity gate (path must exist in the join graph).
+
+### Agentic NL2SQL loop (dsagent/sql/nl2sql.py)
+- LINK -> PLAN joins -> DRAFT (any LLMClient) -> VALIDATE -> REPAIR -> SELECT the
+  candidate that passes the most gates. Provider-agnostic; testable offline via
+  `drafts=`. Now powers SqlAuthorAgent in the pipeline (backward-compatible keys).
+
+### Benchmark + tests
+- schema_benchmark.py [7]: schema-linking recall@3 = 3/3, selects the valid
+  candidate over hallucinated + fan-out drafts, repairs hallucinated columns,
+  flags fan-out. Spider/BIRD loader unchanged ([8], --spider).
+- Tests: 131 -> 139 (new test_sql_agent: 9).
+
+### Honest scope
+- This is the architecture that GENERALIZES to unseen schemas and GUARANTEES
+  safety (no hallucinated/double-counting query ships). It does NOT make full
+  NL2SQL "flawless" — execution accuracy on Spider 2.0 (frontier ~20%) depends on
+  the live LLM + warehouse and is measured in your environment. The guardrails
+  hold regardless of model quality.
+
+# Changelog
+
+## v3.4.0 — schema-complexity benchmark + verified SQL fan-out gate
+
+Validates the DATA-ENGINEERING side the way v3.x validated the estimators.
+
+### Verified SQL fan-out gate (dsagent/sql/gates.py)
+- The verified-skill pattern (precondition + BLOCKING check + known-truth self-test)
+  applied to SQL: `fanout_gate` blocks a query that aggregates a measure across a
+  one-to-many/many-to-one join without pre-aggregating to the grain (the silent
+  double-count bug). Self-test: blocks the hazardous query, passes the safe one.
+
+### Foundation fix (graph.py)
+- `many_to_one` joins are now flagged as fan-out risks too (summing the one-side
+  measure across the many-side double-counts). Previously only `one_to_many` was
+  flagged — surfaced by the new benchmark.
+
+### schema_benchmark.py (new harness)
+- Grades the data layer on hard schemas with known ground truth: nested flattening
+  (Snowflake VARIANT/OBJECT, BigQuery STRUCT/ARRAY incl. ARRAY<STRUCT>), join-graph
+  / FK recovery across 3 databases, fan-out detection, spaghetti anti-patterns,
+  scale stress (~600 columns in milliseconds), and the fan-out gate.
+- Ships Spider 2.0 / BIRD loaders: `--spider tables.json` ingests a REAL enterprise
+  schema (700-3000 columns, nested) and scores join-graph recovery. Runs on your
+  machine where there's network; offline fixtures self-validate everywhere.
+- Honest scope: does NOT attempt full NL2SQL (frontier models score ~20% on Spider
+  2.0); measures foundation understanding. NL2SQL upgrade (RAG schema-linking +
+  candidate generation) remains the next build.
+
+### Totals
+- Tests: 129 -> 131 (fan-out gate self-test in test_core).
+
+# Changelog
+
 ## v3.3.0 — ecosystem adoptions (Agent Skills standard, clinical-grade rigor, data quality)
 
-Folded in the best of the open-source scour (Anthropic Agent Skills repo,
+Folded in the best of the open-source scour (the open Agent Skills ecosystem,
 GPTomics/bioSkills clinical statistics, the csv-summarizer auto-EDA pattern)
 without diluting our verification moat.
 
 ### Open SKILL.md standard + progressive disclosure
 - Verified skills now emit the standard SKILL.md format (YAML frontmatter +
   body) via `Skill.to_skill_md()` and `SkillRegistry.write_skill_files()`, so
-  they are portable to Claude Code / Cursor and the open Agent Skills ecosystem.
+  they are portable to agentic coding tools and the open Agent Skills ecosystem.
 - `SkillRegistry.scan()` exposes cheap metadata-only entries (name+description)
   for progressive disclosure; `load()` fetches the full skill only when selected.
 - Our differentiator is preserved: each emitted skill still carries a BLOCKING
@@ -202,13 +273,13 @@ autonomy*, not raw knowledge.
   (generateContent), both stdlib-urllib, both with native JSON mode when the
   caller asks for JSON.
 - `llm.make_client(provider, model)` factory: one string picks
-  stub/anthropic/openai/gemini. Agents never branch on provider.
+  stub/openai/gemini. Agents never branch on provider.
 - CLI: `python -m dsagent run --provider openai --model gpt-4o`.
 - Live clients raise a clear error (not a crash) when their key is absent;
   offline `stub` remains the default.
 - Tests: 58 -> 63 (provider-factory dispatch + unknown-provider rejection).
 - Use `python -m dsagent eval` with each provider wired into the process eval to
-  compare GPT vs Gemini vs Claude on THIS task, not generic benchmarks.
+  compare GPT vs Gemini vs others on THIS task, not generic benchmarks.
 
 # Changelog
 
@@ -257,6 +328,6 @@ makes continuous iteration safe.
 
 ### Next backlog (not yet built)
 - IV / 2SLS with weak-instrument diagnostics (first-stage F, Anderson–Rubin).
-- Live LLM design-selection eval (swap StubLLM → AnthropicClient).
+- Live LLM design-selection eval (swap StubLLM → OpenAIClient).
 - Domain packs (finance / medical / legal threshold + compliance overrides).
 - Warehouse connector integration test against DuckDB.

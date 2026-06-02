@@ -66,7 +66,7 @@ class Skill:
 
     def to_skill_md(self) -> str:
         """Emit this verified skill in the open Agent Skills SKILL.md format
-        (YAML frontmatter + markdown body) so it is portable to Claude Code,
+        (YAML frontmatter + markdown body) so it is portable to agentic coding tools (AGENTS.md/SKILL.md),
         Cursor, etc. The blocking gate + self-test are what make ours *verified*,
         not just instructions."""
         gate = "none" if self.gate is None else self.gate.__name__

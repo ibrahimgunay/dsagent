@@ -5,7 +5,7 @@
 Flow:  build catalog -> build org (planner + sub-agents) -> planner LLM emits a
 DAG -> orchestrator executes it (parallel batches, human-approval checkpoints,
 budget) -> sub-agents communicate via the blackboard -> critic gates + reconciles
--> delivery. Runs offline on StubLLM; export ANTHROPIC_API_KEY and swap the
+-> delivery. Runs offline on StubLLM; export OPENAI_API_KEY and swap the
 client for a live run.
 """
 from __future__ import annotations
@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from dsagent import Catalog
 from dsagent.types import Dialect
-from dsagent.llm import StubLLM            # swap: AnthropicClient(model="claude-sonnet-4-...")
+from dsagent.llm import StubLLM            # swap: OpenAIClient(model="")
 from dsagent.agents import build_org
 from dsagent.runtime import Blackboard, Orchestrator, Budget
 from demo.fixtures import SNOWFLAKE_DDL, BIGQUERY_DDL
@@ -85,7 +85,7 @@ def main():
 
     hr("DONE")
     print(f"LLM backend: {llm.model}  |  runtime LLM calls: {len(llm.transcript)}")
-    print("Swap StubLLM -> AnthropicClient (set ANTHROPIC_API_KEY) for a live run.")
+    print("Swap StubLLM -> OpenAIClient (set OPENAI_API_KEY) for a live run.")
 
 
 if __name__ == "__main__":

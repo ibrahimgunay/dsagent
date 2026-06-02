@@ -79,6 +79,12 @@ def main():
     check("user entity built", "Users" in onto.entities)
     check("metrics registered", len(onto.metrics) >= 10)
 
+    print("verified sql fan-out gate")
+    from dsagent.sql.gates import selftest_fanout_gate
+    g = selftest_fanout_gate()
+    check("gate blocks the double-count query", g["blocks_double_count"])
+    check("gate passes the safe query", g["passes_safe_query"])
+
     print(f"\n{PASS} passed, {FAIL} failed")
     sys.exit(1 if FAIL else 0)
 

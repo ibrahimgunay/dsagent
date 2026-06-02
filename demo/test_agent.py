@@ -77,11 +77,10 @@ def main():
     check("verdict is FAILED_GATES", v["verdict"] == "FAILED_GATES")
 
     print("provider factory (multi-LLM)")
-    from dsagent.llm import make_client, OpenAIClient, GeminiClient, AnthropicClient
+    from dsagent.llm import make_client, OpenAIClient, GeminiClient
     check("factory: stub", type(make_client("stub")).__name__ == "StubLLM")
     check("factory: openai", isinstance(make_client("openai"), OpenAIClient))
     check("factory: gemini", isinstance(make_client("gemini"), GeminiClient))
-    check("factory: anthropic", isinstance(make_client("anthropic"), AnthropicClient))
     try:
         make_client("bogus"); check("unknown provider rejected", False)
     except ValueError:

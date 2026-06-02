@@ -25,28 +25,31 @@ class SqlAuthorAgent(Tool):
         self.catalog = catalog
         self.llm = llm
         self.jg = JoinGraph(catalog)
+        from ..sql.nl2sql import NL2SQLAgent
+        self.nl2sql = NL2SQLAgent(catalog, llm)
 
     def run(self, ctx: ToolContext) -> Artifact:
-        semantic = ctx.blackboard.value(_first(ctx, "semantic"), {})
-        prompt = ("Write warehouse SQL for the analysis question.\n"
-                  f"question: {ctx.params.get('question', 'measure feature impact on retention')}\n"
-                  f"entities: {list(semantic.get('entities', {}))}\n"
-                  "Pre-aggregate to the join grain to avoid fan-out double counting.")
-        obj, usage = self.llm.complete_json(
-            "You are a principal analytics engineer.", prompt, intent="author_sql")
-        ctx.usage = usage
-
-        sql_text = obj.get("sql", "")
+        question = ctx.params.get("question", "measure feature impact on retention")
+        # agentic: link schema -> LLM draft -> validate -> self-repair -> select
+        result = self.nl2sql.author(question)
+        ctx.usage = ctx.usage  # usage accrued inside nl2sql drafts via llm
+        sql_text = result.sql
         qa = sqlmod.analyze(sql_text, self.catalog)
         fanout_warnings = self.jg.query_fanout_warnings(qa)
 
         return self._emit(ctx, {
             "sql": sql_text,
-            "grain": obj.get("grain"),
             "complexity": qa.complexity,
             "anti_patterns": qa.anti_patterns,
             "fanout_warnings": fanout_warnings,
             "referenced_tables": sorted(set(qa.referenced_tables)),
+            # agentic NL2SQL trail
+            "linked_tables": result.linked_tables,
+            "join_path": result.join_path,
+            "validation": result.validation,
+            "repairs": result.repairs,
+            "candidates_tried": result.candidates_tried,
+            "confidence": result.confidence,
         })
 
 

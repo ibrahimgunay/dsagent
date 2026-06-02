@@ -2,7 +2,7 @@
 
 `build_org` wires the whole organization: it registers every sub-agent as a
 tool and returns the registry + a planner bound to the chosen LLM client. Swap
-StubLLM for AnthropicClient here and the system goes live without touching any
+StubLLM for OpenAIClient here and the system goes live without touching any
 agent code.
 """
 from __future__ import annotations

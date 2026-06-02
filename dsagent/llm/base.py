@@ -2,7 +2,7 @@
 
 Every sub-agent depends on this interface, never on a concrete provider, so we
 can run the entire system offline against `StubLLM` in tests/CI and against
-`AnthropicClient` in production by swapping one object at the composition root.
+`OpenAIClient` in production by swapping one object at the composition root.
 
 `complete_json` is the workhorse: agents ask for a structured object and pass an
 `intent` tag. Production clients ignore the tag (they instruct the model to emit

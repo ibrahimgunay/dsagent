@@ -88,7 +88,7 @@ class JoinGraph:
         if lu and ru:
             return "one_to_one", False
         if ru and not lu:
-            return "many_to_one", False
+            return "many_to_one", True   # aggregating the one-side measure double-counts
         if lu and not ru:
             return "one_to_many", True
         return "many_to_many", True

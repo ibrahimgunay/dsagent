@@ -16,7 +16,7 @@ from . import llm
 from . import runtime
 from . import agents
 
-__version__ = "3.3.0"
+__version__ = "3.5.0"
 __all__ = [
     "Dialect", "SemanticType", "Sensitivity", "Table", "Column", "ForeignKey",
     "JoinEdge", "QueryAnalysis", "Catalog", "JoinGraph", "Ontology",

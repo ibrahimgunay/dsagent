@@ -3,7 +3,7 @@
 Returns sensible, schema-valid structured outputs keyed by `intent`, so the
 full planner -> orchestrator -> sub-agent loop runs and is testable with no
 network. Each branch mirrors the JSON contract the corresponding agent expects
-from a real model. Swap `StubLLM` for `AnthropicClient` to go live; the agents
+from a real model. Swap `StubLLM` for `OpenAIClient` to go live; the agents
 do not change.
 """
 from __future__ import annotations

@@ -27,7 +27,7 @@ def cmd_run(argv):
     import argparse
     ap = argparse.ArgumentParser(prog="dsagent run")
     ap.add_argument("--provider", default="stub",
-                    choices=["stub", "anthropic", "openai", "gemini"],
+                    choices=["stub", "openai", "gemini"],
                     help="LLM backend (default: stub, runs offline)")
     ap.add_argument("--model", default=None, help="override the default model")
     args = ap.parse_args(argv)
@@ -79,7 +79,7 @@ def cmd_adaptive():
 def cmd_test():
     rc = 0
     for t in ("demo.test_core", "demo.test_agent", "demo.test_exec_eval",
-              "demo.test_skills", "demo.test_planner"):
+              "demo.test_skills", "demo.test_planner", "demo.test_sql_agent"):
         print(f"\n### {t}")
         rc |= _run_module(t)
     sys.exit(rc)

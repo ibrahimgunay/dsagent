@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dsagent"
-version = "3.3.0"
+version = "3.5.0"
 description = "Autonomous data-science agent: plans, fits, gates, and ships causal analyses."
 requires-python = ">=3.11"
 dependencies = [
@@ -20,7 +20,7 @@ dependencies = [
 # Dialect-perfect, column-level SQL lineage (auto-detected if installed)
 sql = ["sqlglot>=23"]
 # Live LLM uses stdlib urllib by default; the official SDK is optional
-llm = ["anthropic>=0.40"]
+llm = ["openai>=1.0"]
 # Warehouse drivers (install the ones you use)
 warehouse = ["snowflake-connector-python", "google-cloud-bigquery", "duckdb"]
 

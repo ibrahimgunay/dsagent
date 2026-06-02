@@ -1,6 +1,6 @@
-# CLAUDE.md — working context for this repo
+# AGENTS.md — working context for this repo
 
-This file is read automatically at the start of a Claude Code session. It is the
+This file is read automatically by agentic coding tools at the start of a session. It is the
 handoff from the chat session that built `dsagent`. Read it, then run the tests.
 
 ## What this is
@@ -42,7 +42,7 @@ Goal -> PlannerAgent(LLM) -> task DAG -> Orchestrator
 
 Package map:
 - `catalog.py`, `dialects.py`, `graph.py`, `ontology.py`, `profiling.py`, `sql/` — deterministic foundation: multi-DB schema ingestion, nested-type flattening, join graph + fan-out detection, spaghetti-SQL analysis, semantic layer.
-- `llm/` — provider-agnostic client. `StubLLM` (offline fixtures, used in tests) and `AnthropicClient` (prod, stdlib urllib, reads `ANTHROPIC_API_KEY`).
+- `llm/` — provider-agnostic client. `StubLLM` (offline fixtures, used in tests) and `OpenAIClient` (prod, stdlib urllib, reads `OPENAI_API_KEY`).
 - `runtime/` — `Blackboard` (comms + lineage), `ToolRegistry`, `Budget`, `Orchestrator` (topological batches, thread pool, human-approval, retries).
 - `agents/` — `PlannerAgent` + sub-agents, each a typed `Tool`. `build_org(catalog, llm, executor)` is the composition root.
 - `execution/` — real estimators (`estimators.py`: OLS w/ HC1 SE, DiD, Callaway–Sant'Anna, Double ML, pre-trends, overlap, CATE), `ml.py` (calibrated classifier, leakage-safe CV), `executor.py` (`Executor.fit` + `select_design`), `datagen.py` (known-truth generators).
@@ -79,12 +79,12 @@ from dsagent.llm import make_client            # provider factory
 from dsagent.data import WarehouseDataSource
 from dsagent.pipeline import run_analysis
 
-llm = make_client("anthropic")                 # or "openai" / "gemini" / "stub"
+llm = make_client("openai")                 # or "gemini" / "stub"
 result = run_analysis(goal, catalog, llm=llm,
                       data_source=WarehouseDataSource(connection=conn))
 ```
 
-Provider keys: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_API_KEY`
+Provider keys: `OPENAI_API_KEY`, `GOOGLE_API_KEY`
 (or `GEMINI_API_KEY`). CLI: `python -m dsagent run --provider openai --model gpt-4o`.
 All providers implement the same `LLMClient` interface (`llm/base.py`); the
 agents never branch on provider. Live clients raise a clear error (not a crash)
@@ -94,14 +94,14 @@ when their key is absent, so offline `stub` stays the safe default.
 
 - `pip install sqlglot` to unlock dialect-perfect, column-level SQL lineage
   (the chat session stubbed it — `sql/lineage.py` auto-upgrades when present).
-- Use the live `AnthropicClient` and a real warehouse (chat had no network).
+- Use a live provider client and a real warehouse (chat had no network).
 - Real git: make the "continuous iteration" loop proper commits/branches.
 
 ## Backlog (next sprints, prioritized)
 
 1. **IV / 2SLS** with weak-instrument diagnostics (first-stage F, Anderson–Rubin)
    in `estimators.py`; add a scenario to `eval/scenarios.py`.
-2. **Live-LLM design-selection eval** — swap `StubLLM` -> `AnthropicClient` in
+2. **Live-LLM design-selection eval** — swap `StubLLM` -> `OpenAIClient` in
    `eval/harness.py` process_eval and measure whether the *real model* picks
    truth-recovering designs.
 3. **Domain packs** — finance / medical / legal: compliance rules, method

@@ -1,6 +1,6 @@
 """OpenAI client for the Chat Completions API.
 
-Same `LLMClient` surface as the Anthropic client; stdlib urllib only, so no
+Same `LLMClient` surface as every backend; stdlib urllib only, so no
 extra deps. Reads OPENAI_API_KEY. Uses JSON response mode when the caller's
 system prompt asks for JSON (which `complete_json` does), since native JSON mode
 is more reliable than prompt-only instructions.

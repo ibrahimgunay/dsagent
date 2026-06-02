@@ -71,7 +71,7 @@ the regression is caught before it ships.
 
 ## What's still stubbed
 
-- **LLM** — still `StubLLM` offline; swap to `AnthropicClient` for live design
+- **LLM** — still `StubLLM` offline; swap to `OpenAIClient` for live design
   choices. The eval then measures whether the *live model* picks designs that
   recover truth (the most valuable use of the harness).
 - **DiD** — `did_2x2` is the canonical two-period estimator. Staggered-adoption

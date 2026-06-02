@@ -62,8 +62,8 @@ concurrently, retry a single agent, and reconstruct full lineage for any output
 fixtures) so it's testable in CI with no network. For production:
 
 ```python
-from dsagent.llm import AnthropicClient
-llm = AnthropicClient(model="claude-sonnet-4-...")   # reads ANTHROPIC_API_KEY
+from dsagent.llm import OpenAIClient
+llm = OpenAIClient(model="")   # reads OPENAI_API_KEY
 registry, planner = build_org(catalog, llm)          # nothing else changes
 ```
 
@@ -98,10 +98,10 @@ No agent code changes. The stub and the live client implement the same
 **Real and running:** the full planner → orchestrator → sub-agent → critic →
 delivery loop; parallel/sequential scheduling; blackboard comms + lineage;
 budget; human-approval gating; the deterministic foundation engine; the
-blocking validity gates; the production Anthropic client (works the moment a key
+blocking validity gates; the production OpenAI client (works the moment a key
 + network are present).
 
-**Stubbed (one swap each):** the LLM responses (StubLLM → AnthropicClient), and
+**Stubbed (one swap each):** the LLM responses (StubLLM → OpenAIClient), and
 the modeling agents currently emit *plans* (estimand, estimator, CV strategy)
 rather than executing fits. The next build wires each modeling agent to a
 sandboxed compute tool (statsmodels / EconML / LightGBM) so it returns a fitted
@@ -111,7 +111,7 @@ estimate the critic gates on — the contracts already accommodate it.
 
 ## Suggested next sprints
 
-1. **Live LLM + golden-path eval.** Swap to AnthropicClient; run the agent eval
+1. **Live LLM + golden-path eval.** Swap to OpenAIClient; run the agent eval
    harness on known-answer fixtures (does the planner pick the right design?).
 2. **Execution tools for modeling agents.** Sandboxed runners that actually fit
    Callaway-Sant'Anna / DML / LightGBM and write numeric results + diagnostics.

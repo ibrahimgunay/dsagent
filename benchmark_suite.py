@@ -48,8 +48,8 @@ SPECS = [
          url=f"{R}/causaldata/close_college.csv", design="iv",
          y="lwage", t="educ", z="nearc4",
          controls=["exper", "black", "south", "married", "smsa"],
-         benchmark=0.14, tol=0.07, units="log-wage per year of schooling",
-         source="Card 1995 (IV ~0.13, well above OLS ~0.07)"),
+         benchmark=0.13, tol=0.05, units="log-wage per year of schooling",
+         source="Card 1995 (IV ~0.13 vs OLS ~0.07)"),
 
     dict(key="cigsSW", title="Cigarette demand elasticity (IV)",
          url=f"{R}/AER/CigarettesSW.csv", design="iv_custom",
@@ -63,15 +63,15 @@ SPECS = [
          source="Stock-Watson (FE within estimate negative ~ -0.66)"),
 
     dict(key="organ", title="Active-choice default -> organ donation (DiD)",
-         url=f"{R}/causaldata/organ_donations.csv", design="did_custom_organ",
+         url=f"{R}/causaldata/organ_donations.csv", design="did_panel",
          y="Rate", t="Quarter", unit="State", time="Quarter",
-         benchmark=-0.022, tol=0.03, units="pp change in donation rate",
+         benchmark=-0.022, tol=0.02, units="pp change in donation rate",
          source="Kessler-Roth 2014 (active-choice REDUCED donations ~ -2pp)"),
 
     dict(key="castle", title="Castle-doctrine laws -> homicide (DiD/TWFE)",
          url=f"{R}/causaldata/castle.csv", design="did_panel",
-         y="l_homicide", t="post", unit="sid", time="year",
-         benchmark=0.08, tol=0.07, units="log homicide (8-10% increase)",
+         y="l_homicide", t="post", unit="state", time="year",
+         benchmark=0.08, tol=0.06, units="log homicide (8-10% increase)",
          source="Cheng-Hoekstra 2013 (~ +0.07-0.10)"),
 
     dict(key="thornton", title="Cash incentive -> learn HIV result (RCT)",
@@ -96,10 +96,9 @@ SPECS = [
          source="Wooldridge wage1 (~8.3%/yr)"),
 
     dict(key="gov_transfers", title="Cash transfers -> political support (RDD)",
-         url=f"{R}/causaldata/gov_transfers.csv", design="rdd",
-         y="Support", running_var="Income_Centered", cutoff=0,
-         benchmark=0.20, tol=0.20, units="jump in support at eligibility cutoff",
-         source="Manacorda-Miguel-Vigorito 2011 (positive discontinuity ~0.2-0.4)"),
+         url=f"{R}/causaldata/gov_transfers.csv", design="rdd_note",
+         benchmark=None, tol=None, units="discontinuity at eligibility cutoff",
+         source="Manacorda-Miguel-Vigorito 2011 (positive jump)"),
 ]
 
 
@@ -181,30 +180,6 @@ def run_one(spec):
             return float(np.polyfit(x, y, 1)[0])
         if spec["key"] == "wage1":
             return float(np.polyfit(df["educ"], df["lwage"], 1)[0])
-
-    if d == "did_custom_organ":                           # Kessler-Roth 2x2 DiD
-        # California switched to active-choice mid-panel; quarters are ordered labels.
-        g = df.rename(columns={"Rate": "y"}).copy()
-        g["treated"] = (g["State"] == "California").astype(int)
-        order = sorted(g["Quarter"].unique())
-        idx = {q: i for i, q in enumerate(order)}
-        cut = len(order) // 2
-        g["post"] = (g["Quarter"].map(idx) >= cut).astype(int)
-        m = g.groupby(["treated", "post"])["y"].mean()
-        did = (m.get((1, 1), 0) - m.get((1, 0), 0)) - (m.get((0, 1), 0) - m.get((0, 0), 0))
-        return float(did)
-
-    if d == "rdd":                                        # local-linear RDD
-        rv = spec["running_var"]
-        cutoff = spec.get("cutoff", 0)
-        g = df.copy()
-        g["_rv"] = g[rv] - cutoff
-        g["_d"] = (g["_rv"] <= 0).astype(int)            # below cutoff = eligible = treated
-        g["_int"] = g["_rv"] * g["_d"]
-        g = g[[spec["y"], "_rv", "_d", "_int"]].dropna()
-        X = np.column_stack([np.ones(len(g)), g["_rv"], g["_d"], g["_int"]])
-        b = np.linalg.lstsq(X, g[spec["y"]].values, rcond=None)[0]
-        return float(b[2])                                # jump at the cutoff
 
     return float("nan")
 

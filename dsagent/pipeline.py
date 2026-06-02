@@ -1,7 +1,7 @@
 """One-call entry point for the whole system.
 
     from dsagent.pipeline import run_analysis
-    result = run_analysis(goal, catalog, llm=AnthropicClient(), data_source=ws)
+    result = run_analysis(goal, catalog, llm=OpenAIClient(), data_source=ws)
 
 Builds the org, plans the DAG, executes it with data flowing end-to-end, and
 returns a compact result: verdict, the causal estimate, deliverables, budget,
